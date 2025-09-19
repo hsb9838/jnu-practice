@@ -6,6 +6,40 @@
   <title>Document</title>
 </head>
 <body>
-  
+  <h1 id="intro"></h1>
+    <script>
+      // TODO: Add hello code
+      function getMessage(name) {
+        return `안녕하세요! 제 이름은 ${name}입니다.`;
+      }
+
+      function hobbyMessage(hobby) {
+        return `저는 ${hobby}를 좋아합니다.`;
+      }
+
+      function dreamMessage(dream) {
+        return `제 꿈은 ${dream}입니다.`;
+      }
+
+      function goodbyeMessage() {
+        return `감사합니다!`;
+      }
+
+      const messages = [
+      getMessage("한승범"),
+      hobbyMessage("축구"),
+      dreamMessage("프론트엔드 개발자"),
+      goodbyeMessage()
+      ];
+
+      // TODO: Add setTimeout code
+      let index = 0;  
+      const introElement = document.getElementById("intro"); 
+
+      setInterval(() => {
+        introElement.textContent = messages[index]; 
+        index = (index + 1) % messages.length; 
+      }, 3000); 
+    </script>
 </body>
-</html>
+</html> 
