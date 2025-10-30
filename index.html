@@ -1,40 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Virtual Terrarium</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <h1 id="intro"></h1>
-    <script>
-      // TODO: Add hello code
-      function function1(name) {
-        return `안녕하세요! 제 이름은 ${name}입니다.`;
-      }
+  <header class="site-header">
+    <h1>My Terrarium</h1>
+    <p class="subtitle">식물을 드래그해서 병 안에 배치해보세요</p>
+  </header>
 
-      function function2(hobby) {
-        return `저는 ${hobby}를 좋아합니다.`;
-      }
+  <main id="page">
+    <aside id="left-container" class="container" aria-label="왼쪽 식물 목록">
+      <div class="plant-holder"><img id="plant1"  class="plant" src="./images/plant1.png"  alt="plant 1"></div>
+      <div class="plant-holder"><img id="plant2"  class="plant" src="./images/plant2.png"  alt="plant 2"></div>
+      <div class="plant-holder"><img id="plant3"  class="plant" src="./images/plant3.png"  alt="plant 3"></div>
+      <div class="plant-holder"><img id="plant4"  class="plant" src="./images/plant4.png"  alt="plant 4"></div>
+      <div class="plant-holder"><img id="plant5"  class="plant" src="./images/plant5.png"  alt="plant 5"></div>
+      <div class="plant-holder"><img id="plant6"  class="plant" src="./images/plant6.png"  alt="plant 6"></div>
+      <div class="plant-holder"><img id="plant7"  class="plant" src="./images/plant7.png"  alt="plant 7"></div>
+    </aside>
 
-      function function3(dream) {
-        return `제 꿈은 ${dream}입니다.`;
-      }
+    <section id="terrarium-area" aria-label="테라리움 배치 영역">
+      <div id="terrarium">
+        <div class="jar-top"></div>
+        <div class="jar-walls">
+          <div class="jar-glossy-long"></div>
+          <div class="jar-glossy-short"></div>
+        </div>
+        <div class="dirt"></div>
+        <div class="jar-bottom"></div>
+      </div>
+    </section>
 
-      const messages = [
-      function1("한승범"),
-      function2("축구"),
-      function3("프론트엔드 개발자"),
-      ];
+    <aside id="right-container" class="container" aria-label="오른쪽 식물 목록">
+      <div class="plant-holder"><img id="plant8"  class="plant" src="./images/plant8.png"  alt="plant 8"></div>
+      <div class="plant-holder"><img id="plant9"  class="plant" src="./images/plant9.png"  alt="plant 9"></div>
+      <div class="plant-holder"><img id="plant10" class="plant" src="./images/plant10.png" alt="plant 10"></div>
+      <div class="plant-holder"><img id="plant11" class="plant" src="./images/plant11.png" alt="plant 11"></div>
+      <div class="plant-holder"><img id="plant12" class="plant" src="./images/plant12.png" alt="plant 12"></div>
+      <div class="plant-holder"><img id="plant13" class="plant" src="./images/plant13.png" alt="plant 13"></div>
+      <div class="plant-holder"><img id="plant14" class="plant" src="./images/plant14.png" alt="plant 14"></div>
+    </aside>
+  </main>
 
-      // TODO: Add setTimeout code
-      let index = 0;  
-      const introElement = document.getElementById("intro"); 
+  <footer class="site-footer">
+    <small>Terrarium Project · 5–6주차</small>
+  </footer>
 
-      setInterval(() => {
-        introElement.textContent = messages[index]; 
-        index = (index + 1) % messages.length; 
-      }, 3000); 
-    </script>
+  <script src="./app.js"></script>
 </body>
-</html> 
+</html>
