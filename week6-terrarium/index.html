@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Virtual Terrarium</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>My Terrarium</h1>
+    <p class="subtitle">식물을 드래그해서 병 안에 배치해보세요</p>
+  </header>
+
+  <main id="page">
+    <aside id="left-container" class="container" aria-label="왼쪽 식물 목록">
+      <div class="plant-holder"><img id="plant1"  class="plant" src="./images/plant1.png"  alt="plant 1"></div>
+      <div class="plant-holder"><img id="plant2"  class="plant" src="./images/plant2.png"  alt="plant 2"></div>
+      <div class="plant-holder"><img id="plant3"  class="plant" src="./images/plant3.png"  alt="plant 3"></div>
+      <div class="plant-holder"><img id="plant4"  class="plant" src="./images/plant4.png"  alt="plant 4"></div>
+      <div class="plant-holder"><img id="plant5"  class="plant" src="./images/plant5.png"  alt="plant 5"></div>
+      <div class="plant-holder"><img id="plant6"  class="plant" src="./images/plant6.png"  alt="plant 6"></div>
+      <div class="plant-holder"><img id="plant7"  class="plant" src="./images/plant7.png"  alt="plant 7"></div>
+    </aside>
+
+    <section id="terrarium-area" aria-label="테라리움 배치 영역">
+      <div id="terrarium">
+        <div class="jar-top"></div>
+        <div class="jar-walls">
+          <div class="jar-glossy-long"></div>
+          <div class="jar-glossy-short"></div>
+        </div>
+        <div class="dirt"></div>
+        <div class="jar-bottom"></div>
+      </div>
+    </section>
+
+    <aside id="right-container" class="container" aria-label="오른쪽 식물 목록">
+      <div class="plant-holder"><img id="plant8"  class="plant" src="./images/plant8.png"  alt="plant 8"></div>
+      <div class="plant-holder"><img id="plant9"  class="plant" src="./images/plant9.png"  alt="plant 9"></div>
+      <div class="plant-holder"><img id="plant10" class="plant" src="./images/plant10.png" alt="plant 10"></div>
+      <div class="plant-holder"><img id="plant11" class="plant" src="./images/plant11.png" alt="plant 11"></div>
+      <div class="plant-holder"><img id="plant12" class="plant" src="./images/plant12.png" alt="plant 12"></div>
+      <div class="plant-holder"><img id="plant13" class="plant" src="./images/plant13.png" alt="plant 13"></div>
+      <div class="plant-holder"><img id="plant14" class="plant" src="./images/plant14.png" alt="plant 14"></div>
+    </aside>
+  </main>
+
+  <footer class="site-footer">
+    <small>Terrarium Project · 5–6주차 + Drag&Drop API</small>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
