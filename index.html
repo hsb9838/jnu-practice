@@ -1,55 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Virtual Terrarium</title>
-  <link rel="stylesheet" href="./style.css" />
-</head>
-<body>
-  <header class="site-header">
-    <h1>My Terrarium</h1>
-    <p class="subtitle">식물을 드래그해서 병 안에 배치해보세요</p>
-  </header>
+  <head>
+    <meta charset="utf-8" />
+    <title>Typing game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 캐주얼한 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <h1>⌨️ Typing game</h1>
+        <p class="sub">셜록 홈즈 문장을 캐주얼하게 타이핑해 보자. start를 누르면 시작!</p>
+      </header>
 
-  <main id="page">
-    <aside id="left-container" class="container" aria-label="왼쪽 식물 목록">
-      <div class="plant-holder"><img id="plant1"  class="plant" src="./images/plant1.png"  alt="plant 1"></div>
-      <div class="plant-holder"><img id="plant2"  class="plant" src="./images/plant2.png"  alt="plant 2"></div>
-      <div class="plant-holder"><img id="plant3"  class="plant" src="./images/plant3.png"  alt="plant 3"></div>
-      <div class="plant-holder"><img id="plant4"  class="plant" src="./images/plant4.png"  alt="plant 4"></div>
-      <div class="plant-holder"><img id="plant5"  class="plant" src="./images/plant5.png"  alt="plant 5"></div>
-      <div class="plant-holder"><img id="plant6"  class="plant" src="./images/plant6.png"  alt="plant 6"></div>
-      <div class="plant-holder"><img id="plant7"  class="plant" src="./images/plant7.png"  alt="plant 7"></div>
-    </aside>
-
-    <section id="terrarium-area" aria-label="테라리움 배치 영역">
-      <div id="terrarium">
-        <div class="jar-top"></div>
-        <div class="jar-walls">
-          <div class="jar-glossy-long"></div>
-          <div class="jar-glossy-short"></div>
+      <section class="card">
+        <div class="bar">
+          <span class="chip chip-now">현재 단어</span>
+          <span class="chip chip-tip">맞으면 space로 다음 단어</span>
         </div>
-        <div class="dirt"></div>
-        <div class="jar-bottom"></div>
-      </div>
-    </section>
 
-    <aside id="right-container" class="container" aria-label="오른쪽 식물 목록">
-      <div class="plant-holder"><img id="plant8"  class="plant" src="./images/plant8.png"  alt="plant 8"></div>
-      <div class="plant-holder"><img id="plant9"  class="plant" src="./images/plant9.png"  alt="plant 9"></div>
-      <div class="plant-holder"><img id="plant10" class="plant" src="./images/plant10.png" alt="plant 10"></div>
-      <div class="plant-holder"><img id="plant11" class="plant" src="./images/plant11.png" alt="plant 11"></div>
-      <div class="plant-holder"><img id="plant12" class="plant" src="./images/plant12.png" alt="plant 12"></div>
-      <div class="plant-holder"><img id="plant13" class="plant" src="./images/plant13.png" alt="plant 13"></div>
-      <div class="plant-holder"><img id="plant14" class="plant" src="./images/plant14.png" alt="plant 14"></div>
-    </aside>
-  </main>
+        <p id="quote" class="quote"></p>
+        <p id="message" class="msg" aria-live="polite"></p>
 
-  <footer class="site-footer">
-    <small>Terrarium Project · 5–6주차</small>
-  </footer>
+        <div class="ctrl">
+          <input type="text" id="typed-value" aria-label="current word" placeholder="여기에 입력" />
+          <button type="button" id="start" class="btn btn-start">start 🚀</button>
+          <button type="button" id="reset" class="btn btn-ghost">reset ↻</button>
+        </div>
+      </section>
 
-  <script src="./app.js"></script>
-</body>
+      <footer class="foot">오타가 나면 입력창이 살짝 흔들린다</footer>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
 </html>
