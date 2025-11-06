@@ -1,152 +1,110 @@
 :root{
-  --bg:#f7fafc;
-  --panel:#eeeeee;
-  --jar:#d1e1df;
-  --soil:#3a241d;
+  --bg: #f6f7fb;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --card: #ffffff;
+  --accent: #7c5cff;   /* 라일락 퍼플 */
+  --accent-2: #a78bfa; /* 라벤더 */
+  --ok: #22c55e;       /* 그린 */
+  --bad: #ef4444;      /* 레드 */
+  --ring: #c7d2fe;     /* 인디고-200 */
 }
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
+
+*{ box-sizing: border-box; }
+html, body { height: 100%; }
 body{
-  margin:0;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  background:var(--bg);
-  color:#222;
-  line-height:1.5;
+  margin: 0;
+  background:
+    radial-gradient(1200px 400px at 80% -10%, #e0e7ff 10%, transparent 60%) no-repeat,
+    radial-gradient(900px 500px at 10% 110%, #fde68a 0%, transparent 60%) no-repeat,
+    var(--bg);
+  color: var(--ink);
+  font-family: "Gowun Dodum", "Poppins", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
-/* 헤더/푸터 */
-.site-header{ padding:20px 16px 8px; text-align:center; }
-.subtitle{ margin:6px 0 10px; color:#555; }
-.site-footer{ text-align:center; padding:16px; color:#666; }
+.wrap{ max-width: 880px; margin: 40px auto; padding: 0 16px; }
 
-/* 3분할 레이아웃 */
-#page{
-  display:grid;
-  grid-template-columns:15% 1fr 15%;
-  gap:12px;
-  padding:12px;
-  min-height:calc(100vh - 140px);
-}
-.container{
-  background:var(--panel);
-  padding:10px;
-  border-radius:12px;
-  position:relative;
+.hero h1{ margin: 0 0 6px; font-weight: 800; letter-spacing: .2px; }
+.sub{ margin: 0; color: var(--muted); }
+
+.card{
+  margin-top: 18px; padding: 22px;
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid #eef2ff;
+  box-shadow: 0 10px 30px #00000010;
 }
 
-/* 사이드 목록 카드 */
-.plant-holder{
-  position:relative;
-  height:13vh;
-  margin-bottom:8px;
-  background:#fff;
-  border-radius:10px;
-  display:flex; align-items:center; justify-content:center;
-  outline:1px dashed #e0e0e0;
-  overflow:hidden;
+.bar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; font-size: 14px; color: var(--muted);
+  background: #f4f4ff; border:1px dashed #d9d6ff; border-radius: 999px;
 }
-.plant-holder:last-child{ margin-bottom:0; }
+.chip-now{ background: #ecfeff; border-color:#bae6fd; }
+.chip-tip{ background: #fff7ed; border-color:#fed7aa; }
 
-/* 사이드 썸네일 상태 */
-.plant{
-  max-width:150%;
-  max-height:150%;
-  cursor:grab;
-  user-select:none;
+.quote{
+  min-height: 72px;
+  line-height: 1.8;
+  margin: 10px 0 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #fafafa;
+  border: 1px dashed #e5e7eb;
+  word-break: break-word;
 }
-
-/* 중앙 캔버스 */
-#terrarium-area{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-  min-height:60vh;
-}
-#terrarium{
-  position:relative;
-  width:min(600px, 90%);
-  height:min(620px, 80vh);
-  margin:0 auto;
+.highlight{
+  background: linear-gradient(180deg, #fff 40%, #fde68a 40%);
+  border-radius: 8px;
+  padding: 2px 4px;
 }
 
-/* 병 모양 */
-.jar-walls{
-  height:80%; width:60%;
-  background:var(--jar);
-  border-radius:1rem;
-  position:absolute; bottom:0.5%; left:20%;
-  opacity:0.5;
-  z-index:1;                 /* 유리 레이어 */
-  box-shadow: inset 0 0 30px rgba(255,255,255,0.35), 0 10px 20px rgba(0,0,0,0.05);
-  backdrop-filter: blur(1px);
-  pointer-events:none;       /* 드래그 방해 금지 */
+.msg{ min-height: 22px; color: var(--muted); margin: 0 0 10px; }
+
+.ctrl{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+#typed-value{
+  flex: 1 1 360px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  outline: none;
+  transition: box-shadow .18s ease, transform .06s ease, border-color .18s ease, background .18s ease;
+  font-size: 16px;
 }
-.jar-top{
-  width:50%; height:5%;
-  background:var(--jar);
-  position:absolute; bottom:80.5%; left:25%;
-  opacity:0.7; z-index:1; border-radius:8px 8px 0 0;
+#typed-value:focus{
+  box-shadow: 0 0 0 4px var(--ring);
+  border-color: #a5b4fc;
 }
-.jar-bottom{
-  width:50%; height:1%;
-  background:var(--jar);
-  position:absolute; bottom:0; left:25%;
-  opacity:0.7; border-radius:0 0 12px 12px;
+#typed-value.ok{
+  border-color: var(--ok);
+  box-shadow: 0 0 0 4px #bbf7d0;
 }
-.dirt{
-  width:60%; height:5%;
-  background:var(--soil);
-  position:absolute; bottom:1%; left:20%;
-  border-radius:0 0 1rem 1rem;
-  opacity:0.7; z-index:-1;
-  box-shadow: inset 0 8px 16px rgba(0,0,0,0.15);
+#typed-value.bad{
+  border-color: var(--bad);
+  background: #fff1f2;
+  animation: wiggle .15s linear;
+}
+@keyframes wiggle{
+  0%,100%{ transform: translateX(0) }
+  25%{ transform: translateX(-3px) }
+  75%{ transform: translateX(3px) }
 }
 
-/* 유광 하이라이트 (5주차 요구) */
-.jar-glossy-long{
-  position:absolute; left:24%; bottom:8%;
-  width:3%; height:60%; border-radius:2rem;
-  background:linear-gradient(to bottom,
-    rgba(255,255,255,0.85),
-    rgba(255,255,255,0.2) 50%,
-    rgba(255,255,255,0)
-  );
-  filter:blur(0.4px);
-  pointer-events:none;
-  z-index:2;
-  mix-blend-mode:screen;
+.btn{
+  padding: 12px 16px; border-radius: 12px;
+  border: 1px solid #e5e7eb; background: #fff;
+  cursor: pointer; font-weight: 600;
+  transition: transform .06s ease, box-shadow .18s ease, background .18s ease;
 }
-.jar-glossy-short{
-  position:absolute; left:32%; bottom:45%;
-  width:6%; height:18%; border-radius:2rem;
-  background:linear-gradient(to bottom,
-    rgba(255,255,255,0.9),
-    rgba(255,255,255,0)
-  );
-  opacity:0.7;
-  filter:blur(0.6px);
-  pointer-events:none;
-  z-index:2;
-  mix-blend-mode:screen;
+.btn:active{ transform: translateY(1px); }
+.btn-start{
+  background: linear-gradient(180deg, var(--accent-2), var(--accent));
+  color: #fff; border-color: #a78bfa;
 }
-
-/* 병 안으로 들어간 식물(항상 유리 위) */
-#terrarium .plant{
-  position:absolute;
-  z-index:10;
-  cursor:grab;
-  transform:translate(-50%, -50%); /* left/top을 중심 기준으로 */
+.btn-ghost{
+  background: #f9fafb;
 }
-#terrarium .plant:active{ cursor:grabbing; }
-
-/* 반응형 */
-@media (max-width:1024px){
-  #page{ grid-template-columns:1fr; }
-  #terrarium-area{ order:1; }
-  #left-container, #right-container{ order:3; }
-  .plant-holder{ height:18vh; }
-}
-@media (max-width:480px){
-  #terrarium{ width:95%; height:70vh; }
-}
+.foot{ margin-top: 10px; color: var(--muted); }
