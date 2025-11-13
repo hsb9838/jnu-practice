@@ -71,7 +71,11 @@ body{
   border: 1.5px solid #e5e7eb;
   background: #fff;
   outline: none;
-  transition: box-shadow .18s ease, transform .06s ease, border-color .18s ease, background .18s ease;
+  transition:
+    box-shadow .18s ease,
+    transform .06s ease,
+    border-color .18s ease,
+    background .18s ease;
   font-size: 16px;
 }
 #typed-value:focus{
@@ -87,6 +91,14 @@ body{
   background: #fff1f2;
   animation: wiggle .15s linear;
 }
+
+/* input 이벤트 시 추가 효과 */
+#typed-value.effect{
+  background: #f3f0ff;
+  box-shadow: 0 0 0 4px rgba(167,139,250,.3);
+  border-color: #a78bfa;
+}
+
 @keyframes wiggle{
   0%,100%{ transform: translateX(0) }
   25%{ transform: translateX(-3px) }
@@ -108,3 +120,50 @@ body{
   background: #f9fafb;
 }
 .foot{ margin-top: 10px; color: var(--muted); }
+
+/* 모달 스타일 */
+.modal{
+  position: fixed;
+  inset: 0;
+  background: #00000055;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(2px);
+  z-index: 100;
+}
+.modal.show{
+  display: flex;
+}
+.modal-content{
+  background: #ffffff;
+  padding: 28px 24px;
+  border-radius: 18px;
+  width: 90%;
+  max-width: 380px;
+  box-shadow: 0 12px 40px #00000025;
+  text-align: center;
+  animation: pop .25s ease;
+}
+.modal-content h2{
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.modal-content p{
+  margin: 4px 0;
+}
+.modal-btn{
+  width: 100%;
+  margin-top: 16px;
+}
+
+@keyframes pop{
+  0%{
+    transform: scale(.8);
+    opacity: 0;
+  }
+  100%{
+    transform: scale(1);
+    opacity: 1;
+  }
+}
