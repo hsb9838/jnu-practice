@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "My Carbon Trigger",
+  "version": "1.0.0",
+  "description": "A personal carbon trigger extension based on the lecture.",
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "index.html"
+  }
+}

@@ -1,65 +1,145 @@
-/* mini reset */
-*{box-sizing:border-box}
-body, h1, h2, p, form {margin:0}
-img{max-width:100%;display:block}
+/* 10페이지: reset CSS (오류 모두 수정 완료) */
+body, div, dl, dt, dd, ul,ol,li,h1,h2,h3,h4,h5, h6,pre, code, form, fieldset, legend, textarea, p,blockquote, th, td, input, select, button{margin:0;padding:0}
+fieldset, img{border:0 none}
+dl,ul,ol, menu, li{list-style:none}
+blockquote, q{quotes:none}
+blockquote:before, blockquote:after,q:before, q:after{content:''; content:none}
+input, select, textarea, button{vertical-align:middle;font-size:100%}
+button{border:0 none; background-color: transparent;cursor:pointer}
+table {border-collapse:collapse;border-spacing:0}
+body{-webkit-text-size-adjust:none}
+input[type='text'], input[type='password'], input[type='submit'], input[type='search'], input[type='tel'], input[type='email'], input[type='button'], input[type='reset'] {-webkit-appearance: none; border-radius: 0; }
+input[type='search']::-webkit-search-cancel-button{-webkit-appearance: none}
+body{background:#fff}
+body, th, td, input, select, textarea, button {font-size:14px; line-height:1.5;font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;color:#333;}
+a{color:#333;text-decoration:none}
+a:active, a:hover{text-decoration:none}
+address, caption,cite,code, dfn,em, var{font-style:normal; font-weight:normal}
 
-/* layout */
-.container{ width:320px; padding:16px; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-h1{ font-size:18px; margin:10px 0 12px; }
-h2{ font-size:16px; margin:10px 0; }
-label{ display:block; margin:8px 0 4px; font-size:13px; color:#4b5563; }
+/* --- [실습 2] 시안 CSS (오른쪽 이미지 기준) --- */
 
-.form-data{ margin:8px 0; }
-.form-data input{
-  width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px;
-}
-.search-btn{
-  width:100%; margin-top:10px; padding:10px 12px;
-  background:#111827; color:#fff; border:none; border-radius:8px; cursor:pointer;
-}
-
-.result{ margin-top:10px; }
-.loading{ display:none; color:#6b7280; margin:6px 0; }
-.errors{ color:#ef4444; margin:6px 0; min-height:18px; }
-.result-container{
-  display:none; margin-top:6px; padding:10px; border:1px dashed #e5e7eb; border-radius:8px;
-}
-.clear-btn{
-  display:none; margin-top:8px; padding:8px 12px; border:1px solid #e5e7eb; border-radius:8px; cursor:pointer;
+body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    color: #333;
+    font-size: 16px;
+    line-height: 1.6;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #111827;   /* 완전 어두운 네이비톤 */
-    color: #f3f4f6;        /* 거의 흰색에 가까운 텍스트 */
-  }
+.container {
+    width: 350px; 
+    padding: 20px;
+    box-sizing: border-box; 
+    text-align: center;
+}
 
-  .container {
-    background: #1f2937;   /* 카드 느낌 어두운 박스 */
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-  }
+img {
+    max-width: 220px;
+    margin-top: 10px;
+    margin-bottom: 25px;
+}
 
-  input {
-    background: #374151;   /* 어두운 입력창 */
-    color: #f3f4f6;
-    border: 1px solid #4b5563;
-  }
+h1 {
+    font-size: 1.5rem;
+    font-weight: normal;
+    line-height: 1.4;
+    margin-bottom: 20px;
+}
 
-  .search-btn {
-    background: #4f46e5;   /* 다크모드에서도 잘 보이는 버튼 */
+h2 {
+    font-size: 1.1rem;
+    font-weight: normal;
+    color: #555;
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 8px;
+    margin-top: 15px;
+}
+
+input[type="text"] {
+    width: 80%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: none; 
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    font-size: 1rem;
+    text-align: center; 
+}
+
+button {
+    width: 80%;
+    padding: 8px;
+    margin-top: 25px;
+    background-color: #007bff;
     color: white;
-  }
-
-  .result-container {
-    border-color: #374151;
-    background: #1f2937;
-  }
-
-  .clear-btn {
-    color: #e5e7eb;
-    border: 1px solid #4b5563;
-    background: #374151;
-  }
+    font-size: 1rem;
+    font-weight: normal;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
+button:hover {
+    background-color: #0056b3;
+}
+
+.result-container p {
+    margin: 10px 0;
+    font-size: 1.1rem;
+}
+
+.result-container p span {
+    font-weight: normal;
+}
+
+.loading,
+.errors,
+.result {
+    display: none; 
+}
+
+/* --- [실습 3] 다크 모드 --- */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #2b2b2b;
+        color: #e0e0e0;
+    }
+
+    .container {
+        background: #3c3c3c;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    h1, h2 {
+        color: #ffffff;
+    }
+
+    h2 {
+        color: #ccc;
+    }
+
+    label {
+        color: #e0e0e0;
+    }
+
+    input[type="text"] {
+        background-color: #555;
+        border-color: #555;
+        color: #e0e0e0;
+    }
+
+    button {
+        background-color: #0088cc;
+    }
+
+    button:hover {
+        background-color: #006699;
+    }
+}

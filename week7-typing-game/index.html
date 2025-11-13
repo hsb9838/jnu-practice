@@ -5,7 +5,10 @@
     <title>Typing game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- 캐주얼한 폰트 -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&family=Gowun+Dodum&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&family=Gowun+Dodum&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -25,7 +28,12 @@
         <p id="message" class="msg" aria-live="polite"></p>
 
         <div class="ctrl">
-          <input type="text" id="typed-value" aria-label="current word" placeholder="여기에 입력" />
+          <input
+            type="text"
+            id="typed-value"
+            aria-label="current word"
+            placeholder="여기에 입력"
+          />
           <button type="button" id="start" class="btn btn-start">start 🚀</button>
           <button type="button" id="reset" class="btn btn-ghost">reset ↻</button>
         </div>
@@ -33,6 +41,16 @@
 
       <footer class="foot">오타가 나면 입력창이 살짝 흔들린다</footer>
     </main>
+
+    <!-- 결과 모달 -->
+    <div id="result-modal" class="modal" aria-hidden="true">
+      <div class="modal-content">
+        <h2 id="result-title"></h2>
+        <p id="result-score"></p>
+        <p id="best-score"></p>
+        <button id="modal-close" class="btn btn-start modal-btn">닫기</button>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>
