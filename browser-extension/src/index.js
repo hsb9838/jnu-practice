@@ -1,147 +1,138 @@
-/* src/index.js (9주차 3부, 4부 수정 완료) */
+/* 강아지 정보 확장 프로그램 */
 
-// 1. DOM 요소 잡기 (기존과 동일)
-const form = document.querySelector('.form-data');
-const region = document.querySelector('.region-name');
-const apiKey = document.querySelector('.api-key');
+// DOM 요소 선택
 const errors = document.querySelector('.errors');
 const loading = document.querySelector('.loading');
-const resultsContainer = document.querySelector('.result-container');
-const resultDiv = document.querySelector('.result'); 
-const usage = document.querySelector('.carbon-usage');
-const fossilfuel = document.querySelector('.fossil-fuel');
-const myregion = document.querySelector('.my-region');
-const clearBtn = document.querySelector('.clear-btn');
+const resultDiv = document.querySelector('.result');
+const animalContainer = document.querySelector('.animal-container');
+const animalImage = document.querySelector('.animal-image');
+const refreshAnimalBtn = document.querySelector('.refresh-animal-btn');
+const breedName = document.querySelector('.breed-name');
+const currentDate = document.querySelector('.current-date');
+const dailyQuote = document.querySelector('.daily-quote');
 
-// 2. [9주차 4부] calculateColor 함수 추가 
-const calculateColor = (value) => {
-    let co2Scale = [0, 150, 600, 750, 800];
-    let colors = ['#2AA364', '#F5EB4D', '#9E4229', '#381D02', '#381D02'];
+// 오늘의 명언 목록
+const quotes = [
+    "강아지는 인간의 가장 좋은 친구입니다.",
+    "작은 발걸음이 큰 변화를 만듭니다.",
+    "오늘 하루도 화이팅!",
+    "작은 행동이 큰 차이를 만듭니다.",
+    "긍정적인 마음가짐이 하루를 밝게 만듭니다.",
+    "강아지처럼 순수한 마음으로 하루를 시작해보세요.",
+    "작은 것에 감사하는 마음을 가지세요.",
+    "오늘도 좋은 하루 되세요!"
+];
 
-    let closestNum = co2Scale.sort((a, b) => {
-        return Math.abs(a - value) - Math.abs(b - value);
-    })[0];
+// 날짜 표시 함수
+function displayDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    const weekday = weekdays[today.getDay()];
     
-    let num = (element) => element > closestNum;
-    let scaleIndex = co2Scale.findIndex(num);
+    if (currentDate) {
+        currentDate.textContent = `${year}년 ${month}월 ${day}일 ${weekday}`;
+    }
+}
 
-    let closestColor = colors[scaleIndex];
-    
-    // background.js로 메시지 전송
-    chrome.runtime.sendMessage({ action: 'updateIcon', value: { color: closestColor } });
-};
+// 오늘의 명언 표시 함수
+function displayQuote() {
+    if (dailyQuote) {
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        dailyQuote.textContent = randomQuote;
+    }
+}
 
-// 3. [9주차 3부] displayCarbonUsage 함수 (fetch 버전으로 수정)
-async function displayCarbonUsage(apiKey, region) {
+// 강아지 품종 추출 함수 (URL에서)
+function extractBreedFromUrl(url) {
     try {
-        // 교수님이 주신 fetch 코드를 기반으로 URL 수정
-        const response = await fetch(`https://api.electricitymaps.com/v3/carbon-intensity/latest?zone=${region}`, {
-            method: 'GET',
-            headers: {
-                'auth-token': apiKey
-            },
-        });
+        // URL 예: https://images.dog.ceo/breeds/husky/n02110185_1469.jpg
+        const match = url.match(/breeds\/([^\/]+)/);
+        if (match && match[1]) {
+            // 품종 이름을 보기 좋게 변환 (예: "husky" -> "허스키")
+            const breed = match[1];
+            // 하이픈으로 구분된 경우 처리 (예: "german-shepherd" -> "German Shepherd")
+            return breed
+                .split('-')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+        return '알 수 없음';
+    } catch (error) {
+        return '알 수 없음';
+    }
+}
 
+// 강아지 정보 가져오기 함수
+async function fetchRandomDog() {
+    try {
+        loading.style.display = 'block';
+        errors.textContent = '';
+        
+        const response = await fetch('https://dog.ceo/api/breeds/image/random');
+        
         if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
+            throw new Error(`강아지 API 요청 실패: ${response.status}`);
         }
         
         const data = await response.json();
-        let carbonIntensity = Math.round(data.carbonIntensity);
-
-        // [9주차 4부] calculateColor 함수 호출 
-        calculateColor(carbonIntensity);
-
-        // 성공: 결과창 보여주기
-        loading.style.display = 'none';
-        resultsContainer.style.display = 'block';
-        errors.textContent = '';
-
-        myregion.textContent = region;
-        usage.textContent = `${carbonIntensity} grams (grams CO₂ emitted per kilowatt hour)`;
         
-        if (data.fossilFuelPercentage) {
-            fossilfuel.textContent = data.fossilFuelPercentage.toFixed(2) + '% (percentage of fossil fuels used to generate electricity)';
-        } else {
-            fossilfuel.textContent = ''; // 시안대로 빈 칸 처리
+        // 강아지 이미지 표시
+        if (animalImage && data.message) {
+            animalImage.src = data.message;
+            animalImage.style.display = 'block';
+            
+            // 품종 정보 추출 및 표시
+            const breed = extractBreedFromUrl(data.message);
+            if (breedName) {
+                breedName.textContent = breed;
+            }
         }
         
+        // 컨테이너 표시
+        if (animalContainer) {
+            animalContainer.style.display = 'block';
+        }
+        
+        loading.style.display = 'none';
+        
     } catch (error) {
-        // 실패: 에러창 보여주기
-        console.error('Error fetching carbon data:', error);
+        console.error('강아지 정보 가져오기 오류:', error);
         loading.style.display = 'none';
-        resultsContainer.style.display = 'none';
         errors.style.display = 'block';
-        errors.textContent = 'Sorry, we couldn\'t fetch data for that region.';
+        errors.textContent = '강아지 정보를 가져올 수 없습니다. 나중에 다시 시도해주세요.';
         
-        form.style.display = 'block';
-        clearBtn.style.display = 'none';
-        resultDiv.style.display = 'none';
-        
-        localStorage.removeItem('apiKey');
-        localStorage.removeItem('regionName');
+        if (animalContainer) {
+            animalContainer.style.display = 'block';
+        }
     }
 }
 
-// 4. [9주차 4부] init 함수 (아이콘 초기화 코드 추가)
+// 초기화 함수
 function init() {
-    const storedApiKey = localStorage.getItem('apiKey');
-    const storedRegion = localStorage.getItem('regionName');
-
-    // [9주차 4부] 아이콘을 'green'으로 초기화 
-    chrome.runtime.sendMessage({
-        action: 'updateIcon',
-        value: {
-            color: 'green',
-        },
-    });
-
-    if (storedApiKey === null || storedRegion === null) {
-        form.style.display = 'block';
-        resultDiv.style.display = 'none';
-        loading.style.display = 'none';
-        clearBtn.style.display = 'none';
-        errors.textContent = '';
-    } else {
-        // (로딩 버그 수정된 버전)
-        form.style.display = 'none';
-        resultDiv.style.display = 'block';
-        loading.style.display = 'block';
-        resultsContainer.style.display = 'none';
-        clearBtn.style.display = 'block';
-        
-        displayCarbonUsage(storedApiKey, storedRegion); 
-    }
-}
-
-// 5. handleSubmit, setUpUser, reset 함수 (기존과 동일)
-function handleSubmit(e) {
-    e.preventDefault();
-    setUpUser(apiKey.value, region.value);
-}
-
-function setUpUser(apiKey, regionName) {
-    localStorage.setItem('apiKey', apiKey);
-    localStorage.setItem('regionName', regionName);
-    
-    form.style.display = 'none';
     resultDiv.style.display = 'block';
     loading.style.display = 'block';
-    resultsContainer.style.display = 'none';
-    errors.textContent = '';
-    clearBtn.style.display = 'block';
-
-    displayCarbonUsage(apiKey, regionName);
+    errors.style.display = 'none';
+    
+    // 날짜와 명언 표시
+    displayDate();
+    displayQuote();
+    
+    // 강아지 정보 가져오기
+    fetchRandomDog();
 }
 
-function reset(e) {
-    e.preventDefault();
-    localStorage.removeItem('regionName');
-    localStorage.removeItem('apiKey');
-    init();
+// 새로고침 버튼 리스너
+if (refreshAnimalBtn) {
+    refreshAnimalBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetchRandomDog();
+        // 명언도 새로고침할 때마다 변경
+        displayQuote();
+    });
 }
 
-// 6. 리스너 추가 (기존과 동일)
-form.addEventListener('submit', (e) => handleSubmit(e));
-clearBtn.addEventListener('click', (e) => reset(e));
+// 초기화 실행
 init();

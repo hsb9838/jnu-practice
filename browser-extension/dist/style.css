@@ -33,11 +33,6 @@ body {
     text-align: center;
 }
 
-img {
-    max-width: 220px;
-    margin-top: 10px;
-    margin-bottom: 25px;
-}
 
 h1 {
     font-size: 1.5rem;
@@ -90,13 +85,106 @@ button:hover {
     background-color: #0056b3;
 }
 
-.result-container p {
-    margin: 10px 0;
-    font-size: 1.1rem;
+/* 강아지 정보 섹션 스타일 */
+.animal-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border-left: 4px solid #ff6b6b;
 }
 
-.result-container p span {
+.animal-container h3 {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #ff6b6b;
+}
+
+.animal-content {
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.animal-image {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: none;
+}
+
+.dog-info {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.dog-info p {
+    margin: 8px 0;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+.breed-name {
     font-weight: normal;
+    color: #ff6b6b;
+}
+
+.refresh-animal-btn {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+    background-color: #ff6b6b;
+    color: white;
+    font-size: 0.9rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.refresh-animal-btn:hover {
+    background-color: #ee5a5a;
+}
+
+/* 오늘의 정보 섹션 스타일 */
+.info-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f0f8ff;
+    border-radius: 8px;
+    border-left: 4px solid #4a90e2;
+}
+
+.info-container h3 {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #4a90e2;
+}
+
+.info-content {
+    text-align: left;
+}
+
+.info-content p {
+    margin: 10px 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.date-info {
+    color: #333;
+}
+
+.quote-info {
+    color: #555;
+    font-style: italic;
+}
+
+.daily-quote {
+    font-weight: normal;
+    color: #4a90e2;
 }
 
 .loading,
@@ -141,5 +229,57 @@ button:hover {
 
     button:hover {
         background-color: #006699;
+    }
+
+    /* 다크 모드 강아지 정보 섹션 */
+    .animal-container {
+        background-color: #444;
+        border-left-color: #ff6b6b;
+    }
+
+    .animal-container h3 {
+        color: #ff6b6b;
+    }
+
+    .animal-image {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .dog-info p {
+        color: #e0e0e0;
+    }
+
+    .breed-name {
+        color: #ff6b6b;
+    }
+
+    .refresh-animal-btn {
+        background-color: #ff6b6b;
+    }
+
+    .refresh-animal-btn:hover {
+        background-color: #ee5a5a;
+    }
+
+    /* 다크 모드 정보 섹션 */
+    .info-container {
+        background-color: #444;
+        border-left-color: #4a90e2;
+    }
+
+    .info-container h3 {
+        color: #4a90e2;
+    }
+
+    .date-info {
+        color: #e0e0e0;
+    }
+
+    .quote-info {
+        color: #ccc;
+    }
+
+    .daily-quote {
+        color: #6bb3ff;
     }
 }
