@@ -1,13 +1,28 @@
 <!DOCTYPE html>
-  <html>
+<html lang="ko">
   <head>
-  <meta charset="UTF-8" />
-  <title>Space Game</title>
+    <meta charset="UTF-8" />
+    <title>Space Game Part3</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      canvas {
+        border: 1px solid #111;
+        display: block;
+      }
+    </style>
   </head>
   <body>
-  <canvas id="myCanvas" width="1024" height="768" style="border:1px solid #d3d3d3;">
-  Your browser does not support the HTML5 canvas tag.</canvas>
-  <script src="app.js">
-  </script>
+    <canvas id="myCanvas" width="800" height="600"></canvas>
+    <script src="main.js"></script>
   </body>
-  </html>
+</html>
