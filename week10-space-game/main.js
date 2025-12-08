@@ -29,6 +29,10 @@ class EventEmitter {
       this.listeners[message].forEach((l) => l(message, payload));
     }
   }
+
+  clear() {
+    this.listeners = {};
+  }
 }
 
 // ==================== 메시지 상수 ====================
@@ -38,22 +42,33 @@ const Messages = {
   KEY_EVENT_LEFT: "KEY_EVENT_LEFT",
   KEY_EVENT_RIGHT: "KEY_EVENT_RIGHT",
   KEY_EVENT_SPACE: "KEY_EVENT_SPACE",
+  KEY_EVENT_ENTER: "KEY_EVENT_ENTER",
   COLLISION_ENEMY_LASER: "COLLISION_ENEMY_LASER",
+  COLLISION_ENEMY_HERO: "COLLISION_ENEMY_HERO",
+  GAME_END_LOSS: "GAME_END_LOSS",
+  GAME_END_WIN: "GAME_END_WIN",
 };
 
 // ==================== 전역 변수 ====================
 let heroImg;
 let enemyImg;
+let lifeImg;
 let laserImg;        // 메인 레이저(빨간색)
 let smallLaserImg;   // 보조 레이저(초록색)
 let supportImg;      // 보조 비행선
 let explosionImg;    // 폭발 이미지
+let shieldImg;       // 실드 아이템
 
 let canvas;
 let ctx;
 let gameObjects = [];
 let hero;
-let supportShips = []; // 양쪽 보조 비행선 배열
+let supportShips = [];
+let shieldItem = null;
+let shieldActive = false;
+let shieldTimerId = null;
+let shieldSpawnId = null;
+let gameLoopId = null;
 let eventEmitter = new EventEmitter();
 
 // ==================== 기본 GameObject ====================
@@ -91,7 +106,9 @@ class Hero extends GameObject {
     this.height = 75;
     this.type = "Hero";
     this.speed = { x: 0, y: 0 };
-    this.cooldown = 0; // 레이저 쿨타임
+    this.cooldown = 0;
+    this.life = 3;
+    this.points = 0;
   }
 
   canFire() {
@@ -100,7 +117,6 @@ class Hero extends GameObject {
 
   fire() {
     if (this.canFire()) {
-      // 메인 우주선에서 빨간 레이저 발사
       gameObjects.push(new Laser(this.x + 45, this.y - 10));
       this.cooldown = 500;
 
@@ -112,6 +128,17 @@ class Hero extends GameObject {
         }
       }, 100);
     }
+  }
+
+  decrementLife() {
+    this.life--;
+    if (this.life <= 0) {
+      this.dead = true;
+    }
+  }
+
+  incrementPoints() {
+    this.points += 100;
   }
 }
 
@@ -131,7 +158,6 @@ class Enemy extends GameObject {
       if (this.y < canvas.height - this.height) {
         this.y += 5;
       } else {
-        console.log("Stopped at", this.y);
         clearInterval(id);
       }
     }, 300);
@@ -195,7 +221,6 @@ class SupportShip extends GameObject {
     this.type = "Support";
     this.img = supportImg;
 
-    // 자동 발사 타이머
     this.fireTimer = setInterval(() => {
       if (this.dead) {
         clearInterval(this.fireTimer);
@@ -204,7 +229,7 @@ class SupportShip extends GameObject {
       gameObjects.push(
         new SmallLaser(this.x + this.width / 2 - 2, this.y - 5)
       );
-    }, 700); // 0.7초마다 자동 발사
+    }, 700);
   }
 }
 
@@ -219,7 +244,31 @@ class Explosion extends GameObject {
 
     setTimeout(() => {
       this.dead = true;
-    }, 300); // 잠깐만 표시
+    }, 300);
+  }
+}
+
+// ==================== 실드 아이템 ====================
+class ShieldItem extends GameObject {
+  constructor(x, y) {
+    super(x, y);
+    this.width = 40;
+    this.height = 40;
+    this.type = "ShieldItem";
+    this.img = shieldImg;
+
+    this.fallTimer = setInterval(() => {
+      if (this.dead) {
+        clearInterval(this.fallTimer);
+        return;
+      }
+      this.y += 3;
+
+      if (this.y > canvas.height) {
+        this.dead = true;
+        clearInterval(this.fallTimer);
+      }
+    }, 100);
   }
 }
 
@@ -251,8 +300,9 @@ window.addEventListener("keyup", (evt) => {
   } else if (evt.key === "ArrowRight") {
     eventEmitter.emit(Messages.KEY_EVENT_RIGHT);
   } else if (evt.keyCode === 32) {
-    // 스페이스바
     eventEmitter.emit(Messages.KEY_EVENT_SPACE);
+  } else if (evt.key === "Enter") {
+    eventEmitter.emit(Messages.KEY_EVENT_ENTER);
   }
 });
 
@@ -281,22 +331,22 @@ function createHero() {
 function createSupportShips() {
   supportShips = [];
 
-  // 왼쪽 보조 비행선
-  const left = new SupportShip(
-    hero.x - 120,
-    hero.y + 30
-  );
-  // 오른쪽 보조 비행선
-  const right = new SupportShip(
-    hero.x + hero.width + 40,
-    hero.y + 30
-  );
+  const left = new SupportShip(hero.x - 120, hero.y + 30);
+  const right = new SupportShip(hero.x + hero.width + 40, hero.y + 30);
 
   supportShips.push(left, right);
   gameObjects.push(left, right);
 }
 
-// ==================== 충돌 체크 ====================
+function spawnShieldItem() {
+  if (shieldItem && !shieldItem.dead) return;
+
+  const x = Math.random() * (canvas.width - 50);
+  shieldItem = new ShieldItem(x, 0);
+  gameObjects.push(shieldItem);
+}
+
+// ==================== 보조 함수들 ====================
 function intersectRect(r1, r2) {
   return !(
     r2.left > r1.right ||
@@ -306,12 +356,107 @@ function intersectRect(r1, r2) {
   );
 }
 
+function drawText(message, x, y, color = "red", align = "left") {
+  ctx.font = "30px Arial";
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.fillText(message, x, y);
+}
+
+function drawPoints() {
+  drawText("Points: " + hero.points, 10, canvas.height - 20, "red", "left");
+}
+
+function drawLife() {
+  const START_POS = canvas.width - 180;
+  for (let i = 0; i < hero.life; i++) {
+    ctx.drawImage(
+      lifeImg,
+      START_POS + 45 * (i + 1),
+      canvas.height - 37
+    );
+  }
+}
+
+function displayMessage(message, color = "red") {
+  ctx.font = "30px Arial";
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+}
+
+function isHeroDead() {
+  return hero.life <= 0;
+}
+
+function isEnemiesDead() {
+  const enemies = gameObjects.filter(
+    (go) => go.type === "Enemy" && !go.dead
+  );
+  return enemies.length === 0;
+}
+
+function activateShield() {
+  shieldActive = true;
+  if (shieldTimerId) clearTimeout(shieldTimerId);
+
+  shieldTimerId = setTimeout(() => {
+    shieldActive = false;
+  }, 5000);
+}
+
+function endGame(win) {
+  if (gameLoopId) {
+    clearInterval(gameLoopId);
+    gameLoopId = null;
+  }
+  if (shieldSpawnId) {
+    clearInterval(shieldSpawnId);
+    shieldSpawnId = null;
+  }
+
+  setTimeout(() => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (win) {
+      displayMessage(
+        "Victory!!! Pew Pew... - Press [Enter] to start a new game Captain Pew Pew",
+        "green"
+      );
+    } else {
+      displayMessage(
+        "You died !!! Press [Enter] to start a new game Captain Pew Pew",
+        "red"
+      );
+    }
+  }, 200);
+}
+
+function resetGame() {
+  if (gameLoopId) {
+    clearInterval(gameLoopId);
+    gameLoopId = null;
+  }
+  if (shieldSpawnId) {
+    clearInterval(shieldSpawnId);
+    shieldSpawnId = null;
+  }
+
+  eventEmitter.clear();
+  initGame();
+  startGameLoop();
+}
+
+// ==================== 게임 로직 ====================
 function updateGameObjects() {
   const enemies = gameObjects.filter((go) => go.type === "Enemy");
   const projectiles = gameObjects.filter(
     (go) => go.type === "Laser" || go.type === "SmallLaser"
   );
 
+  // 레이저-적 충돌
   projectiles.forEach((p) => {
     enemies.forEach((m) => {
       if (intersectRect(p.rectFromGameObject(), m.rectFromGameObject())) {
@@ -323,23 +468,55 @@ function updateGameObjects() {
     });
   });
 
+  // Hero-Enemy 충돌
+  enemies.forEach((enemy) => {
+    const heroRect = hero.rectFromGameObject();
+    if (intersectRect(heroRect, enemy.rectFromGameObject())) {
+      eventEmitter.emit(Messages.COLLISION_ENEMY_HERO, { enemy });
+    }
+  });
+
+  // Hero-실드 아이템 충돌
+  if (shieldItem && !shieldItem.dead) {
+    const heroRect = hero.rectFromGameObject();
+    const itemRect = shieldItem.rectFromGameObject();
+    if (intersectRect(heroRect, itemRect)) {
+      shieldItem.dead = true;
+      activateShield();
+    }
+  }
+
   gameObjects = gameObjects.filter((go) => !go.dead);
 }
 
-// ==================== 그리기 ====================
-function drawGameObjects(ctx) {
+function drawGameObjects() {
   gameObjects.forEach((go) => go.draw(ctx));
+
+  // 실드 활성화 시 히어로 강조 테두리
+  if (shieldActive && hero && !hero.dead) {
+    ctx.strokeStyle = "cyan";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(
+      hero.x - 5,
+      hero.y - 5,
+      hero.width + 10,
+      hero.height + 10
+    );
+  }
 }
 
 // ==================== initGame ====================
 function initGame() {
   gameObjects = [];
   supportShips = [];
+  shieldItem = null;
+  shieldActive = false;
 
   createEnemies();
   createHero();
   createSupportShips();
 
+  // 키 이벤트 핸들러
   eventEmitter.on(Messages.KEY_EVENT_UP, () => {
     hero.y -= 5;
     supportShips.forEach((s) => (s.y -= 5));
@@ -357,38 +534,83 @@ function initGame() {
     supportShips.forEach((s) => (s.x += 5));
   });
   eventEmitter.on(Messages.KEY_EVENT_SPACE, () => {
-    // 여기서 메인 우주선 빨간 레이저 발사
     if (hero.canFire()) {
       hero.fire();
     }
   });
+  eventEmitter.on(Messages.KEY_EVENT_ENTER, () => {
+    resetGame();
+  });
 
+  // 충돌 이벤트
   eventEmitter.on(Messages.COLLISION_ENEMY_LASER, (_, { first, second }) => {
     first.dead = true;
     second.dead = true;
-    gameObjects.push(new Explosion(second.x, second.y));
+    hero.incrementPoints();
+
+    if (isEnemiesDead()) {
+      eventEmitter.emit(Messages.GAME_END_WIN);
+    }
   });
+
+  eventEmitter.on(Messages.COLLISION_ENEMY_HERO, (_, { enemy }) => {
+    enemy.dead = true;
+
+    if (!shieldActive) {
+      hero.decrementLife();
+    }
+
+    if (isHeroDead()) {
+      eventEmitter.emit(Messages.GAME_END_LOSS);
+      return;
+    }
+    if (isEnemiesDead()) {
+      eventEmitter.emit(Messages.GAME_END_WIN);
+    }
+  });
+
+  eventEmitter.on(Messages.GAME_END_WIN, () => {
+    endGame(true);
+  });
+
+  eventEmitter.on(Messages.GAME_END_LOSS, () => {
+    endGame(false);
+  });
+
+  // 실드 아이템 주기적 생성
+  shieldSpawnId = setInterval(() => {
+    spawnShieldItem();
+  }, 8000);
 }
 
-// ==================== 메인: onload ====================
+// ==================== 게임 루프 ====================
+function startGameLoop() {
+  gameLoopId = setInterval(() => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawPoints();
+    drawLife();
+    updateGameObjects();
+    drawGameObjects();
+  }, 100);
+}
+
+// ==================== onload ====================
 window.onload = async () => {
   canvas = document.getElementById("myCanvas");
   ctx = canvas.getContext("2d");
 
   heroImg = await loadTexture("assets/png/player.png");
   enemyImg = await loadTexture("assets/png/enemyShip.png");
+  lifeImg = await loadTexture("assets/png/life.png");
   laserImg = await loadTexture("assets/png/laserRed.png");
   smallLaserImg = await loadTexture("assets/png/laserGreen.png");
   supportImg = await loadTexture("assets/png/playerLeft.png");
   explosionImg = await loadTexture("assets/png/laserRedShot.png");
+  shieldImg = await loadTexture("assets/png/shield.png");
 
   initGame();
-
-  setInterval(() => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawGameObjects(ctx);
-    updateGameObjects();
-  }, 100);
+  startGameLoop();
 };
