@@ -1,4 +1,16 @@
-// ==================== 유틸: 이미지 로더 ====================
+/* =========================================================
+   SPACE GAME (Week 11~12 통합 버전)
+   - 일반 적 웨이브 → 보스전
+   - 풀차징 레이저 (기본 레이저 이미지 사용)
+   - 양옆 보조 우주선 자동 공격
+   - 쉴드 아이템 드롭 + 일정 시간 무적
+   - 점수/라이프/게이지/보스 HP UI
+   - Enter 로 재시작
+========================================================= */
+
+/* ======================
+   1. 이미지 로더
+====================== */
 function loadTexture(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -11,606 +23,660 @@ function loadTexture(src) {
   });
 }
 
-// ==================== EventEmitter ====================
-class EventEmitter {
-  constructor() {
-    this.listeners = {};
-  }
+/* ======================
+   2. 전역 변수
+====================== */
+let canvas, ctx;
 
-  on(message, listener) {
-    if (!this.listeners[message]) {
-      this.listeners[message] = [];
-    }
-    this.listeners[message].push(listener);
-  }
-
-  emit(message, payload = null) {
-    if (this.listeners[message]) {
-      this.listeners[message].forEach((l) => l(message, payload));
-    }
-  }
-
-  clear() {
-    this.listeners = {};
-  }
-}
-
-// ==================== 메시지 상수 ====================
-const Messages = {
-  KEY_EVENT_UP: "KEY_EVENT_UP",
-  KEY_EVENT_DOWN: "KEY_EVENT_DOWN",
-  KEY_EVENT_LEFT: "KEY_EVENT_LEFT",
-  KEY_EVENT_RIGHT: "KEY_EVENT_RIGHT",
-  KEY_EVENT_SPACE: "KEY_EVENT_SPACE",
-  KEY_EVENT_ENTER: "KEY_EVENT_ENTER",
-  COLLISION_ENEMY_LASER: "COLLISION_ENEMY_LASER",
-  COLLISION_ENEMY_HERO: "COLLISION_ENEMY_HERO",
-  GAME_END_LOSS: "GAME_END_LOSS",
-  GAME_END_WIN: "GAME_END_WIN",
-};
-
-// ==================== 전역 변수 ====================
+// 이미지 리소스
 let heroImg;
 let enemyImg;
+let bossImg;
 let lifeImg;
-let laserImg;        // 메인 레이저(빨간색)
-let smallLaserImg;   // 보조 레이저(초록색)
-let supportImg;      // 보조 비행선
-let explosionImg;    // 폭발 이미지
-let shieldImg;       // 실드 아이템
+let laserImg;
+let explosionImg;
+let supportImg;
+let smallLaserImg;
+let shieldImg;
 
-let canvas;
-let ctx;
-let gameObjects = [];
+// 게임 오브젝트
 let hero;
+let enemies = [];
+let boss = null;
 let supportShips = [];
-let shieldItem = null;
-let shieldActive = false;
-let shieldTimerId = null;
-let shieldSpawnId = null;
-let gameLoopId = null;
-let eventEmitter = new EventEmitter();
+let bullets = [];
+let bossBullets = [];
+let explosions = [];
+let shieldItems = [];
 
-// ==================== 기본 GameObject ====================
+// 게임 상태
+let gameOver = false;
+let gameWin = false;
+
+// 키 입력 상태
+const keys = {
+  ArrowLeft: false,
+  ArrowRight: false,
+  ArrowUp: false,
+  ArrowDown: false,
+};
+
+// 쉴드 상태
+let shieldActive = false;
+let shieldTimer = 0;
+const SHIELD_DURATION = 420; // 프레임 기준(대략 7초)
+
+// 차징/필살기 상태
+let isCharging = false;
+let chargeStart = 0;
+const CHARGE_TIME = 1200;        // 밀리초: 1.2초 이상 누르면 풀차징
+let lastUltimateTime = 0;
+const ULTIMATE_COOLDOWN = 4000;  // 밀리초: 4초 쿨타임
+
+// 플레이어 이동 속도
+const HERO_SPEED = 10;
+
+/* ======================
+   3. 유틸 함수
+====================== */
+
+// 값 범위 제한
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+// 사각형 충돌 판정
+function intersect(a, b) {
+  return !(
+    a.x + a.width < b.x ||
+    a.x > b.x + b.width ||
+    a.y + a.height < b.y ||
+    a.y > b.y + b.height
+  );
+}
+
+/* ======================
+   4. 기본 클래스들
+====================== */
+
+// 화면에 그릴 수 있는 공통 오브젝트
 class GameObject {
-  constructor(x, y) {
+  constructor(x, y, w, h, img = null) {
     this.x = x;
     this.y = y;
+    this.width = w;
+    this.height = h;
+    this.img = img;
     this.dead = false;
-    this.type = "";
-    this.width = 0;
-    this.height = 0;
-    this.img = undefined;
-  }
-
-  rectFromGameObject() {
-    return {
-      top: this.y,
-      left: this.x,
-      bottom: this.y + this.height,
-      right: this.x + this.width,
-    };
   }
 
   draw(ctx) {
-    if (!this.img) return;
-    ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+    if (this.img) {
+      ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+    }
   }
 }
 
-// ==================== Hero ====================
+/* -----------------------
+   플레이어 우주선
+------------------------ */
 class Hero extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 99;
-    this.height = 75;
-    this.type = "Hero";
-    this.speed = { x: 0, y: 0 };
-    this.cooldown = 0;
-    this.life = 3;
-    this.points = 0;
+  constructor(x, y, img) {
+    super(x, y, 90, 70, img); // 기본 크기 고정
+    this.lives = 3;
+    this.score = 0;
+    this.lastShot = 0;
   }
 
-  canFire() {
-    return this.cooldown === 0;
+  update() {
+    // 방향키로 이동
+    if (keys.ArrowLeft) this.x -= HERO_SPEED;
+    if (keys.ArrowRight) this.x += HERO_SPEED;
+    if (keys.ArrowUp) this.y -= HERO_SPEED;
+    if (keys.ArrowDown) this.y += HERO_SPEED;
+
+    // 화면 밖으로 못 나가게 제한
+    this.x = clamp(this.x, 0, canvas.width - this.width);
+    this.y = clamp(this.y, canvas.height / 2, canvas.height - this.height);
   }
 
-  fire() {
-    if (this.canFire()) {
-      gameObjects.push(new Laser(this.x + 45, this.y - 10));
-      this.cooldown = 500;
-
-      let id = setInterval(() => {
-        if (this.cooldown > 0) {
-          this.cooldown -= 100;
-        } else {
-          clearInterval(id);
-        }
-      }, 100);
+  hit() {
+    // 쉴드가 켜져 있으면 데미지 무시
+    if (!shieldActive) {
+      this.lives--;
     }
-  }
-
-  decrementLife() {
-    this.life--;
-    if (this.life <= 0) {
+    if (this.lives <= 0) {
       this.dead = true;
     }
   }
 
-  incrementPoints() {
-    this.points += 100;
+  canFireNormal(now) {
+    // 0.2초 이상 지난 경우에만 다시 발사 가능
+    return now - this.lastShot > 200;
+  }
+
+  fireNormal(now) {
+    if (!this.canFireNormal(now)) return;
+
+    const bx = this.x + this.width / 2 - 4;
+    const by = this.y - 4;
+    bullets.push(new Bullet(bx, by, -18, 1)); // 기본 데미지 1
+
+    this.lastShot = now;
   }
 }
 
-// ==================== Enemy ====================
+/* -----------------------
+   일반 UFO 적
+------------------------ */
 class Enemy extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 98;
-    this.height = 50;
-    this.type = "Enemy";
+  constructor(x, y, img) {
+    super(x, y, 70, 50, img);
+    this.vy = 2;
+  }
 
-    const id = setInterval(() => {
-      if (this.dead) {
-        clearInterval(id);
-        return;
-      }
-      if (this.y < canvas.height - this.height) {
-        this.y += 5;
-      } else {
-        clearInterval(id);
-      }
-    }, 300);
+  update() {
+    // 화면 높이의 55% 지점까지 내려오고 멈춤
+    const targetY = canvas.height * 0.55;
+    if (this.y < targetY) {
+      this.y += this.vy;
+    }
   }
 }
 
-// ==================== 메인 레이저(빨간색) ====================
-class Laser extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 9;
-    this.height = 33;
-    this.type = "Laser";
-    this.img = laserImg;
-
-    let id = setInterval(() => {
-      if (this.dead) {
-        clearInterval(id);
-        return;
-      }
-      if (this.y > 0) {
-        this.y -= 15;
-      } else {
-        this.dead = true;
-        clearInterval(id);
-      }
-    }, 100);
+/* -----------------------
+   보스 UFO
+------------------------ */
+class Boss extends GameObject {
+  constructor(x, y, img) {
+    super(x, y, 220, 130, img);
+    this.hp = 80;
+    this.dir = 1;  // 좌우 이동 방향
+    this.cool = 0; // 공격 쿨타임
   }
-}
 
-// ==================== 보조 레이저(초록색) ====================
-class SmallLaser extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 5;
-    this.height = 20;
-    this.type = "SmallLaser";
-    this.img = smallLaserImg;
+  update() {
+    // 좌우 왕복 이동 (속도 3)
+    this.x += this.dir * 3;
+    if (this.x < 10 || this.x + this.width > canvas.width - 10) {
+      this.dir *= -1;
+    }
 
-    let id = setInterval(() => {
-      if (this.dead) {
-        clearInterval(id);
-        return;
-      }
-      if (this.y > 0) {
-        this.y -= 12;
-      } else {
-        this.dead = true;
-        clearInterval(id);
-      }
-    }, 100);
+    // 탄환 발사
+    this.cool--;
+    if (this.cool <= 0) {
+      const bx = this.x + this.width / 2;
+      const by = this.y + this.height;
+      bossBullets.push(new Bullet(bx, by, 9, 1)); // 아래로 발사
+      this.cool = 25 + Math.random() * 15;
+    }
   }
-}
 
-// ==================== 보조 비행선 ====================
-class SupportShip extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 80;
-    this.height = 55;
-    this.type = "Support";
-    this.img = supportImg;
-
-    this.fireTimer = setInterval(() => {
-      if (this.dead) {
-        clearInterval(this.fireTimer);
-        return;
-      }
-      gameObjects.push(
-        new SmallLaser(this.x + this.width / 2 - 2, this.y - 5)
-      );
-    }, 700);
-  }
-}
-
-// ==================== 폭발 ====================
-class Explosion extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 98;
-    this.height = 50;
-    this.type = "Explosion";
-    this.img = explosionImg;
-
-    setTimeout(() => {
+  damage(dmg) {
+    this.hp -= dmg;
+    if (this.hp <= 0) {
       this.dead = true;
-    }, 300);
+    }
   }
 }
 
-// ==================== 실드 아이템 ====================
+/* -----------------------
+   기본 빨간 레이저 탄환
+------------------------ */
+class Bullet extends GameObject {
+  constructor(x, y, vy, dmg) {
+    super(x, y, 8, 24, laserImg);
+    this.vy = vy;
+    this.damage = dmg;
+  }
+
+  update() {
+    this.y += this.vy;
+    if (this.y < -50 || this.y > canvas.height + 50) {
+      this.dead = true;
+    }
+  }
+}
+
+/* -----------------------
+   보조 우주선의 작은 초록 레이저
+------------------------ */
+class SupportLaser extends GameObject {
+  constructor(x, y, img) {
+    super(x - 3, y, 6, 18, img);
+    this.vy = -15;
+    this.damage = 1;
+  }
+
+  update() {
+    this.y += this.vy;
+    if (this.y < -50) this.dead = true;
+  }
+}
+
+/* -----------------------
+   풀차징 레이저 (필살기)
+   - 기본 레이저 이미지 사용, 크기/데미지만 강화
+------------------------ */
+class UltimateLaser extends GameObject {
+  constructor(x, y, img) {
+    super(x - 12, y - 40, 28, 60, img); // 일반 레이저보다 크게
+    this.vy = -23;
+    this.damage = 40; // 강력한 데미지 (보스 HP 80 기준 2방)
+  }
+
+  update() {
+    this.y += this.vy;
+    if (this.y < -80) this.dead = true;
+  }
+}
+
+/* -----------------------
+   양옆 보조 우주선
+------------------------ */
+class SupportShip extends GameObject {
+  constructor(offsetX, img) {
+    super(0, 0, 70, 50, img);
+    this.offsetX = offsetX; // 메인 우주선 기준 x 오프셋
+    this.cool = 0;          // 자동 발사 쿨타임
+  }
+
+  update() {
+    // 항상 메인 우주선 양옆에서 따라다님
+    this.x = hero.x + this.offsetX;
+    this.y = hero.y; // 같은 높이로 맞춤
+
+    this.cool--;
+    if (this.cool <= 0) {
+      const bx = this.x + this.width / 2;
+      const by = this.y - 5;
+      bullets.push(new SupportLaser(bx, by, smallLaserImg));
+      this.cool = 20; // 발사 간격
+    }
+  }
+}
+
+/* -----------------------
+   폭발 이펙트 (레이저 맞았을 때)
+------------------------ */
+class Explosion extends GameObject {
+  constructor(x, y, img) {
+    super(x, y, 98, 50, img);
+    this.life = 10; // 10프레임 동안 유지
+  }
+
+  update() {
+    this.life--;
+    if (this.life <= 0) this.dead = true;
+  }
+}
+
+/* -----------------------
+   쉴드 아이템
+------------------------ */
 class ShieldItem extends GameObject {
-  constructor(x, y) {
-    super(x, y);
-    this.width = 40;
-    this.height = 40;
-    this.type = "ShieldItem";
-    this.img = shieldImg;
+  constructor(x, y, img) {
+    super(x, y, 40, 40, img);
+    this.vy = 2;
+  }
 
-    this.fallTimer = setInterval(() => {
-      if (this.dead) {
-        clearInterval(this.fallTimer);
-        return;
-      }
-      this.y += 3;
-
-      if (this.y > canvas.height) {
-        this.dead = true;
-        clearInterval(this.fallTimer);
-      }
-    }, 100);
+  update() {
+    this.y += this.vy;
+    if (this.y > canvas.height + 40) {
+      this.dead = true;
+    }
   }
 }
 
-// ==================== 키 기본 동작 막기 ====================
-let onKeyDown = function (e) {
-  switch (e.keyCode) {
-    case 37:
-    case 38:
-    case 39:
-    case 40:
-    case 32:
-      e.preventDefault();
-      break;
-    default:
-      break;
-  }
-};
+/* =========================================================
+   5. 생성 함수들 (적 웨이브, 보스, 보조기)
+========================================================= */
 
-window.addEventListener("keydown", onKeyDown);
-
-// ==================== 키 입력 → 메시지 ====================
-window.addEventListener("keyup", (evt) => {
-  if (evt.key === "ArrowUp") {
-    eventEmitter.emit(Messages.KEY_EVENT_UP);
-  } else if (evt.key === "ArrowDown") {
-    eventEmitter.emit(Messages.KEY_EVENT_DOWN);
-  } else if (evt.key === "ArrowLeft") {
-    eventEmitter.emit(Messages.KEY_EVENT_LEFT);
-  } else if (evt.key === "ArrowRight") {
-    eventEmitter.emit(Messages.KEY_EVENT_RIGHT);
-  } else if (evt.keyCode === 32) {
-    eventEmitter.emit(Messages.KEY_EVENT_SPACE);
-  } else if (evt.key === "Enter") {
-    eventEmitter.emit(Messages.KEY_EVENT_ENTER);
-  }
-});
-
-// ==================== 생성 함수들 ====================
+// 일반 적 웨이브 생성
 function createEnemies() {
-  const MONSTER_TOTAL = 5;
-  const MONSTER_WIDTH = MONSTER_TOTAL * 98;
-  const START_X = (canvas.width - MONSTER_WIDTH) / 2;
-  const STOP_X = START_X + MONSTER_WIDTH;
+  enemies = [];
+  const cols = 6;
+  const rows = 4;
+  const gapX = 80;
+  const gapY = 60;
 
-  for (let x = START_X; x < STOP_X; x += 98) {
-    for (let y = 0; y < 50 * 5; y += 50) {
-      const enemy = new Enemy(x, y);
-      enemy.img = enemyImg;
-      gameObjects.push(enemy);
+  const startX = (canvas.width - (cols - 1) * gapX) / 2 - 35;
+  const startY = 40;
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = startX + c * gapX;
+      const y = startY + r * gapY;
+      enemies.push(new Enemy(x, y, enemyImg));
     }
   }
 }
 
-function createHero() {
-  hero = new Hero(canvas.width / 2 - 45, canvas.height - canvas.height / 4);
-  hero.img = heroImg;
-  gameObjects.push(hero);
+// 보스 생성
+function spawnBoss() {
+  if (!boss) {
+    boss = new Boss(canvas.width / 2 - 110, 40, bossImg);
+  }
 }
 
+// 보조 우주선 2대 생성
 function createSupportShips() {
+  supportShips = [
+    new SupportShip(-130, supportImg), // 왼쪽
+    new SupportShip(130, supportImg),  // 오른쪽
+  ];
+}
+
+/* =========================================================
+   6. 게임 초기화
+========================================================= */
+function initGame() {
+  enemies = [];
+  boss = null;
   supportShips = [];
+  bullets = [];
+  bossBullets = [];
+  explosions = [];
+  shieldItems = [];
 
-  const left = new SupportShip(hero.x - 120, hero.y + 30);
-  const right = new SupportShip(hero.x + hero.width + 40, hero.y + 30);
+  // 메인 우주선 위치: 캔버스 아래쪽 중앙
+  const heroWidth = 90;
+  const heroHeight = 70;
+  const heroX = canvas.width / 2 - heroWidth / 2;
+  const heroY = canvas.height - heroHeight - 80;
+  hero = new Hero(heroX, heroY, heroImg);
 
-  supportShips.push(left, right);
-  gameObjects.push(left, right);
+  createEnemies();
+  createSupportShips();
+
+  gameOver = false;
+  gameWin = false;
+
+  shieldActive = false;
+  shieldTimer = 0;
+
+  isCharging = false;
+  chargeStart = 0;
 }
 
-function spawnShieldItem() {
-  if (shieldItem && !shieldItem.dead) return;
+/* =========================================================
+   7. 게임 로직 업데이트
+========================================================= */
+function update() {
+  if (gameOver) return;
 
-  const x = Math.random() * (canvas.width - 50);
-  shieldItem = new ShieldItem(x, 0);
-  gameObjects.push(shieldItem);
-}
+  hero.update();
+  supportShips.forEach((s) => s.update());
+  enemies.forEach((e) => e.update());
+  bullets.forEach((b) => b.update());
+  bossBullets.forEach((b) => b.update());
+  explosions.forEach((e) => e.update());
+  shieldItems.forEach((i) => i.update());
 
-// ==================== 보조 함수들 ====================
-function intersectRect(r1, r2) {
-  return !(
-    r2.left > r1.right ||
-    r2.right < r1.left ||
-    r2.top > r1.bottom ||
-    r2.bottom < r1.top
-  );
-}
+  // 1) 플레이어 탄환 vs 일반 적
+  bullets.forEach((b) => {
+    enemies.forEach((e) => {
+      if (b.dead || e.dead) return;
+      if (intersect(b, e)) {
+        e.dead = true;
+        b.dead = true;
 
-function drawText(message, x, y, color = "red", align = "left") {
-  ctx.font = "30px Arial";
-  ctx.fillStyle = color;
-  ctx.textAlign = align;
-  ctx.fillText(message, x, y);
-}
+        explosions.push(new Explosion(e.x, e.y, explosionImg));
+        hero.score += 20 * (b.damage || 1); // 적 처치 시 점수
 
-function drawPoints() {
-  drawText("Points: " + hero.points, 10, canvas.height - 20, "red", "left");
-}
-
-function drawLife() {
-  const START_POS = canvas.width - 180;
-  for (let i = 0; i < hero.life; i++) {
-    ctx.drawImage(
-      lifeImg,
-      START_POS + 45 * (i + 1),
-      canvas.height - 37
-    );
-  }
-}
-
-function displayMessage(message, color = "red") {
-  ctx.font = "30px Arial";
-  ctx.fillStyle = color;
-  ctx.textAlign = "center";
-  ctx.fillText(message, canvas.width / 2, canvas.height / 2);
-}
-
-function isHeroDead() {
-  return hero.life <= 0;
-}
-
-function isEnemiesDead() {
-  const enemies = gameObjects.filter(
-    (go) => go.type === "Enemy" && !go.dead
-  );
-  return enemies.length === 0;
-}
-
-function activateShield() {
-  shieldActive = true;
-  if (shieldTimerId) clearTimeout(shieldTimerId);
-
-  shieldTimerId = setTimeout(() => {
-    shieldActive = false;
-  }, 5000);
-}
-
-function endGame(win) {
-  if (gameLoopId) {
-    clearInterval(gameLoopId);
-    gameLoopId = null;
-  }
-  if (shieldSpawnId) {
-    clearInterval(shieldSpawnId);
-    shieldSpawnId = null;
-  }
-
-  setTimeout(() => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    if (win) {
-      displayMessage(
-        "Victory!!! Pew Pew... - Press [Enter] to start a new game Captain Pew Pew",
-        "green"
-      );
-    } else {
-      displayMessage(
-        "You died !!! Press [Enter] to start a new game Captain Pew Pew",
-        "red"
-      );
-    }
-  }, 200);
-}
-
-function resetGame() {
-  if (gameLoopId) {
-    clearInterval(gameLoopId);
-    gameLoopId = null;
-  }
-  if (shieldSpawnId) {
-    clearInterval(shieldSpawnId);
-    shieldSpawnId = null;
-  }
-
-  eventEmitter.clear();
-  initGame();
-  startGameLoop();
-}
-
-// ==================== 게임 로직 ====================
-function updateGameObjects() {
-  const enemies = gameObjects.filter((go) => go.type === "Enemy");
-  const projectiles = gameObjects.filter(
-    (go) => go.type === "Laser" || go.type === "SmallLaser"
-  );
-
-  // 레이저-적 충돌
-  projectiles.forEach((p) => {
-    enemies.forEach((m) => {
-      if (intersectRect(p.rectFromGameObject(), m.rectFromGameObject())) {
-        eventEmitter.emit(Messages.COLLISION_ENEMY_LASER, {
-          first: p,
-          second: m,
-        });
+        // 10% 확률로 쉴드 아이템 드롭
+        if (Math.random() < 0.1) {
+          shieldItems.push(new ShieldItem(e.x, e.y, shieldImg));
+        }
       }
     });
   });
 
-  // Hero-Enemy 충돌
-  enemies.forEach((enemy) => {
-    const heroRect = hero.rectFromGameObject();
-    if (intersectRect(heroRect, enemy.rectFromGameObject())) {
-      eventEmitter.emit(Messages.COLLISION_ENEMY_HERO, { enemy });
+  // 죽은 적 정리
+  enemies = enemies.filter((e) => !e.dead);
+
+  // 2) 모든 적 처치 시 보스 등장
+  if (enemies.length === 0 && !boss) {
+    spawnBoss();
+  }
+
+  // 3) 보스 업데이트 및 피격
+  if (boss && !boss.dead) {
+    boss.update();
+
+    bullets.forEach((b) => {
+      if (b.dead) return;
+      if (intersect(b, boss)) {
+        boss.damage(b.damage || 1);
+        b.dead = true;
+        explosions.push(new Explosion(boss.x, boss.y, explosionImg));
+        hero.score += 10 * (b.damage || 1);
+      }
+    });
+  }
+
+  // 4) 보스 탄환 vs 플레이어
+  bossBullets.forEach((b) => {
+    if (!b.dead && intersect(b, hero)) {
+      b.dead = true;
+      hero.hit();
     }
   });
 
-  // Hero-실드 아이템 충돌
-  if (shieldItem && !shieldItem.dead) {
-    const heroRect = hero.rectFromGameObject();
-    const itemRect = shieldItem.rectFromGameObject();
-    if (intersectRect(heroRect, itemRect)) {
-      shieldItem.dead = true;
-      activateShield();
+  // 5) 쉴드 아이템 획득 처리
+  shieldItems.forEach((item, idx) => {
+    if (intersect(hero, item)) {
+      shieldActive = true;
+      shieldTimer = SHIELD_DURATION;
+      item.dead = true;
+    }
+  });
+
+  // 쉴드 남은 시간 감소
+  if (shieldActive) {
+    shieldTimer--;
+    if (shieldTimer <= 0) {
+      shieldActive = false;
     }
   }
 
-  gameObjects = gameObjects.filter((go) => !go.dead);
+  // 6) 죽은 오브젝트 정리
+  bullets = bullets.filter((b) => !b.dead);
+  bossBullets = bossBullets.filter((b) => !b.dead);
+  explosions = explosions.filter((e) => !e.dead);
+  shieldItems = shieldItems.filter((i) => !i.dead);
+
+  // 7) 승패 판정
+  if (hero.dead) {
+    gameOver = true;
+    gameWin = false;
+  }
+  if (boss && boss.dead) {
+    gameOver = true;
+    gameWin = true;
+  }
 }
 
-function drawGameObjects() {
-  gameObjects.forEach((go) => go.draw(ctx));
+/* =========================================================
+   8. 렌더링 (화면 그리기)
+========================================================= */
+function draw() {
+  // 배경
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 실드 활성화 시 히어로 강조 테두리
-  if (shieldActive && hero && !hero.dead) {
-    ctx.strokeStyle = "cyan";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(
-      hero.x - 5,
-      hero.y - 5,
-      hero.width + 10,
-      hero.height + 10
+  // 점수 (왼쪽 위, 잘 안 잘리게 여백 줌)
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("Score: " + hero.score, 30, 40);
+
+  // 라이프 (오른쪽 위)
+  for (let i = 0; i < hero.lives; i++) {
+    ctx.drawImage(lifeImg, canvas.width - 170 + i * 40, 10, 30, 30);
+  }
+
+  // 보스 HP 바 (보스가 있을 때만)
+  if (boss && !boss.dead) {
+    const barW = 300;
+    const barH = 18;
+    const barX = canvas.width / 2 - barW / 2;
+    const barY = 50;
+
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(barX, barY, barW, barH);
+    ctx.fillStyle = "red";
+    ctx.fillRect(barX, barY, (boss.hp / 80) * barW, barH);
+
+    ctx.fillStyle = "white";
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("BOSS HP", canvas.width / 2, barY - 5);
+  }
+
+  // 일반 적
+  enemies.forEach((e) => e.draw(ctx));
+
+  // 보스
+  if (boss && !boss.dead) {
+    boss.draw(ctx);
+  }
+
+  // 보조 우주선
+  supportShips.forEach((s) => s.draw(ctx));
+
+  // 메인 우주선
+  hero.draw(ctx);
+
+  // 쉴드 이펙트 (항상 메인 우주선 위에)
+  if (shieldActive) {
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.drawImage(
+      shieldImg,
+      hero.x - 15,
+      hero.y - 20,
+      hero.width + 30,
+      hero.height + 40
+    );
+    ctx.restore();
+  }
+
+  // 탄환, 폭발, 쉴드 아이템
+  bullets.forEach((b) => b.draw(ctx));
+  bossBullets.forEach((b) => b.draw(ctx));
+  explosions.forEach((e) => e.draw(ctx));
+  shieldItems.forEach((i) => i.draw(ctx));
+
+  // 차징 게이지 표시
+  const now = Date.now();
+  let ratio = 0;
+  if (isCharging) {
+    ratio = Math.min((now - chargeStart) / CHARGE_TIME, 1);
+  }
+  const cbW = 220;
+  const cbH = 10;
+  const cbX = canvas.width / 2 - cbW / 2;
+  const cbY = canvas.height - 40;
+
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(cbX, cbY, cbW, cbH);
+  if (ratio > 0) {
+    ctx.fillStyle = "cyan";
+    ctx.fillRect(cbX, cbY, cbW * ratio, cbH);
+  }
+
+  // 게임 종료 메시지
+  if (gameOver) {
+    ctx.fillStyle = gameWin ? "yellow" : "red";
+    ctx.font = "32px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(
+      gameWin ? "VICTORY! 엔터를 눌러 재시작" : "GAME OVER... 엔터를 눌러 재시작",
+      canvas.width / 2,
+      canvas.height / 2
     );
   }
 }
 
-// ==================== initGame ====================
-function initGame() {
-  gameObjects = [];
-  supportShips = [];
-  shieldItem = null;
-  shieldActive = false;
-
-  createEnemies();
-  createHero();
-  createSupportShips();
-
-  // 키 이벤트 핸들러
-  eventEmitter.on(Messages.KEY_EVENT_UP, () => {
-    hero.y -= 5;
-    supportShips.forEach((s) => (s.y -= 5));
-  });
-  eventEmitter.on(Messages.KEY_EVENT_DOWN, () => {
-    hero.y += 5;
-    supportShips.forEach((s) => (s.y += 5));
-  });
-  eventEmitter.on(Messages.KEY_EVENT_LEFT, () => {
-    hero.x -= 5;
-    supportShips.forEach((s) => (s.x -= 5));
-  });
-  eventEmitter.on(Messages.KEY_EVENT_RIGHT, () => {
-    hero.x += 5;
-    supportShips.forEach((s) => (s.x += 5));
-  });
-  eventEmitter.on(Messages.KEY_EVENT_SPACE, () => {
-    if (hero.canFire()) {
-      hero.fire();
-    }
-  });
-  eventEmitter.on(Messages.KEY_EVENT_ENTER, () => {
-    resetGame();
-  });
-
-  // 충돌 이벤트
-  eventEmitter.on(Messages.COLLISION_ENEMY_LASER, (_, { first, second }) => {
-    first.dead = true;
-    second.dead = true;
-    hero.incrementPoints();
-
-    if (isEnemiesDead()) {
-      eventEmitter.emit(Messages.GAME_END_WIN);
-    }
-  });
-
-  eventEmitter.on(Messages.COLLISION_ENEMY_HERO, (_, { enemy }) => {
-    enemy.dead = true;
-
-    if (!shieldActive) {
-      hero.decrementLife();
-    }
-
-    if (isHeroDead()) {
-      eventEmitter.emit(Messages.GAME_END_LOSS);
-      return;
-    }
-    if (isEnemiesDead()) {
-      eventEmitter.emit(Messages.GAME_END_WIN);
-    }
-  });
-
-  eventEmitter.on(Messages.GAME_END_WIN, () => {
-    endGame(true);
-  });
-
-  eventEmitter.on(Messages.GAME_END_LOSS, () => {
-    endGame(false);
-  });
-
-  // 실드 아이템 주기적 생성
-  shieldSpawnId = setInterval(() => {
-    spawnShieldItem();
-  }, 8000);
+/* =========================================================
+   9. 메인 루프
+========================================================= */
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
 }
 
-// ==================== 게임 루프 ====================
-function startGameLoop() {
-  gameLoopId = setInterval(() => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+/* =========================================================
+   10. 키보드 입력 처리
+========================================================= */
+function setupControls() {
+  window.addEventListener("keydown", (e) => {
+    if (e.key.startsWith("Arrow")) {
+      keys[e.key] = true;
+    }
 
-    drawPoints();
-    drawLife();
-    updateGameObjects();
-    drawGameObjects();
-  }, 100);
+    // 스페이스: 차징 시작
+    if (e.code === "Space" && !isCharging && !gameOver) {
+      isCharging = true;
+      chargeStart = Date.now();
+    }
+
+    // 엔터: 게임 오버 상태에서 재시작
+    if (e.key === "Enter" && gameOver) {
+      initGame();
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.key.startsWith("Arrow")) {
+      keys[e.key] = false;
+    }
+
+    // 스페이스에서 손 뗄 때: 일반 샷 / 필살기 결정
+    if (e.code === "Space" && isCharging && !gameOver) {
+      isCharging = false;
+      const now = Date.now();
+      const pressTime = now - chargeStart;
+
+      const canUlt =
+        pressTime >= CHARGE_TIME &&
+        now - lastUltimateTime >= ULTIMATE_COOLDOWN;
+
+      if (canUlt) {
+        // 풀차징 레이저 발사
+        bullets.push(
+          new UltimateLaser(hero.x + hero.width / 2, hero.y, laserImg)
+        );
+        lastUltimateTime = now;
+      } else {
+        // 일반 샷
+        hero.fireNormal(now);
+      }
+    }
+  });
 }
 
-// ==================== onload ====================
+/* =========================================================
+   11. 시작 진입점
+========================================================= */
 window.onload = async () => {
   canvas = document.getElementById("myCanvas");
   ctx = canvas.getContext("2d");
 
+  // 이미지 로드 (파일 이름/경로는 네 폴더 구조에 맞게 되어 있음)
   heroImg = await loadTexture("assets/png/player.png");
   enemyImg = await loadTexture("assets/png/enemyShip.png");
+  bossImg = await loadTexture("assets/png/enemyUFO.png");
   lifeImg = await loadTexture("assets/png/life.png");
   laserImg = await loadTexture("assets/png/laserRed.png");
-  smallLaserImg = await loadTexture("assets/png/laserGreen.png");
-  supportImg = await loadTexture("assets/png/playerLeft.png");
   explosionImg = await loadTexture("assets/png/laserRedShot.png");
+  supportImg = await loadTexture("assets/png/playerLeft.png");
+  smallLaserImg = await loadTexture("assets/png/laserGreen.png");
   shieldImg = await loadTexture("assets/png/shield.png");
 
+  setupControls();
   initGame();
-  startGameLoop();
+  loop();
 };
